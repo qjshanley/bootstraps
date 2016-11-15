@@ -1,5 +1,6 @@
 #!/bin/bash
 roll=cassandra-scale-test
+cd /tmp
 
 # add necessary repositories
 add-apt-repository -y ppa:webupd8team/java
