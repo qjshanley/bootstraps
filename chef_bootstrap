@@ -9,3 +9,5 @@ apt-get upgrade -y
 # install chef
 wget https://packages.chef.io/stable/ubuntu/16.04/chef-server-core_12.11.0-1_amd64.deb
 dpkg -i chef-server*
+chef-server-ctl reconfigure
+
