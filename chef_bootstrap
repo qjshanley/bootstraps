@@ -7,9 +7,13 @@ apt-get update -y
 apt-get upgrade -y
 
 # ensure host name resolves
-printf "\n$(ifconfig | grep "eth0" -A 5 | grep "inet addr" | cut -d ":" -f 2 | cut -d " " -f 1)\t$(hostname)\n" >> /etc/hosts
+printf "127.0.0.1\tlocalhost\n" > /tmp/hosts
+printf "$(ip -o -f inet address show eth0 | cut -d ' ' -f 7 | cut -d '/' -f 1)\t$(hostname)\n\n" >> /tmp/hosts
+grep -e '#' -A 99 /etc/hosts >> /tmp/hosts
+echo /tmp/hosts > /etc/hosts
 
 # install chef
 wget https://packages.chef.io/stable/ubuntu/16.04/chef-server-core_12.11.0-1_amd64.deb
 dpkg -i chef-server*
+
 chef-server-ctl reconfigure
