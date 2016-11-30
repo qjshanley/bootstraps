@@ -1,0 +1,40 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Metadata": {
+    "AWS::CloudFormation::Designer": {
+      "d1a555f6-ef92-43c3-9062-a77b13142167": {
+        "size": {
+          "width": 420,
+          "height": 270
+        },
+        "position": {
+          "x": 140,
+          "y": 90
+        },
+        "z": 0,
+        "embeds": []
+      }
+    }
+  },
+  "Resources": {
+    "EC2VPC46G7W": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/24",
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Cassandra Scale Test"
+          }
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "d1a555f6-ef92-43c3-9062-a77b13142167"
+        }
+      }
+    }
+  }
+}
