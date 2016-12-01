@@ -4,14 +4,71 @@
     "AWS::CloudFormation::Designer": {
       "d1a555f6-ef92-43c3-9062-a77b13142167": {
         "size": {
-          "width": 420,
-          "height": 270
+          "width": 440,
+          "height": 300
         },
         "position": {
-          "x": 140,
-          "y": 90
+          "x": 110,
+          "y": 60
         },
         "z": 0,
+        "embeds": [
+          "0f02a986-8bba-4a91-ad61-b12dd520995e",
+          "81394186-8a01-4b5a-a839-7fcf2fe8ab8f",
+          "54ad68ff-deec-476c-8e44-083967ff8466",
+          "7c36998f-e0db-4558-b8d2-774415849ea2"
+        ]
+      },
+      "7c36998f-e0db-4558-b8d2-774415849ea2": {
+        "size": {
+          "width": 80,
+          "height": 80
+        },
+        "position": {
+          "x": 400,
+          "y": 90
+        },
+        "z": 1,
+        "parent": "d1a555f6-ef92-43c3-9062-a77b13142167",
+        "embeds": []
+      },
+      "54ad68ff-deec-476c-8e44-083967ff8466": {
+        "size": {
+          "width": 80,
+          "height": 80
+        },
+        "position": {
+          "x": 400,
+          "y": 240
+        },
+        "z": 1,
+        "parent": "d1a555f6-ef92-43c3-9062-a77b13142167",
+        "embeds": []
+      },
+      "81394186-8a01-4b5a-a839-7fcf2fe8ab8f": {
+        "size": {
+          "width": 80,
+          "height": 80
+        },
+        "position": {
+          "x": 190,
+          "y": 100
+        },
+        "z": 1,
+        "parent": "d1a555f6-ef92-43c3-9062-a77b13142167",
+        "embeds": []
+      },
+      "0f02a986-8bba-4a91-ad61-b12dd520995e": {
+        "size": {
+          "width": 80,
+          "height": 80
+        },
+        "position": {
+          "x": 190,
+          "y": 240
+        },
+        "z": 1,
+        "parent": "d1a555f6-ef92-43c3-9062-a77b13142167",
         "embeds": []
       }
     }
@@ -20,7 +77,7 @@
     "EC2VPC46G7W": {
       "Type": "AWS::EC2::VPC",
       "Properties": {
-        "CidrBlock": "10.0.0.0/24",
+        "CidrBlock": "10.0.0.0/16",
         "EnableDnsSupport": true,
         "EnableDnsHostnames": true,
         "Tags": [
@@ -33,6 +90,90 @@
       "Metadata": {
         "AWS::CloudFormation::Designer": {
           "id": "d1a555f6-ef92-43c3-9062-a77b13142167"
+        }
+      }
+    },
+    "EC2S1ENEY": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "us-east-1a",
+        "CidrBlock": "10.0.0.0/24",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "dmz"
+          }
+        ],
+        "VpcId": {
+          "Ref": "EC2VPC46G7W"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "7c36998f-e0db-4558-b8d2-774415849ea2"
+        }
+      }
+    },
+    "EC2S55WZ9": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "us-east-1a",
+        "CidrBlock": "10.0.1.0/24",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "data_us-east-1a"
+          }
+        ],
+        "VpcId": {
+          "Ref": "EC2VPC46G7W"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "54ad68ff-deec-476c-8e44-083967ff8466"
+        }
+      }
+    },
+    "EC2S3XWBK": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "us-east-1b",
+        "CidrBlock": "10.0.2.0/24",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "data_us-east-1b"
+          }
+        ],
+        "VpcId": {
+          "Ref": "EC2VPC46G7W"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "81394186-8a01-4b5a-a839-7fcf2fe8ab8f"
+        }
+      }
+    },
+    "EC2S4NK5R": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "us-east-1d",
+        "CidrBlock": "10.0.3.0/24",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "data_us-east-1d"
+          }
+        ],
+        "VpcId": {
+          "Ref": "EC2VPC46G7W"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "0f02a986-8bba-4a91-ad61-b12dd520995e"
         }
       }
     }
