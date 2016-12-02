@@ -43,7 +43,7 @@
         },
         "position": {
           "x": 60,
-          "y": 220
+          "y": 230
         },
         "z": 1,
         "parent": "d1a555f6-ef92-43c3-9062-a77b13142167",
@@ -115,8 +115,8 @@
           "height": 270
         },
         "position": {
-          "x": 1130,
-          "y": 120
+          "x": 1070,
+          "y": 130
         },
         "z": 0,
         "parent": "d1a555f6-ef92-43c3-9062-a77b13142167",
@@ -130,8 +130,8 @@
           "height": 60
         },
         "position": {
-          "x": 1170,
-          "y": 170
+          "x": 1110,
+          "y": 180
         },
         "z": 2,
         "parent": "c47698ca-2566-4567-bab5-556d725e4f0b",
@@ -188,10 +188,85 @@
           "id": "d1a555f6-ef92-43c3-9062-a77b13142167"
         },
         "z": 3
+      },
+      "5c75f0d7-9be7-4789-b290-a0464a3a7694": {
+        "source": {
+          "id": "c47698ca-2566-4567-bab5-556d725e4f0b"
+        },
+        "target": {
+          "id": "0f02a986-8bba-4a91-ad61-b12dd520995e"
+        },
+        "z": 0
+      },
+      "5b20b6be-28fe-4ade-8242-df1776b98416": {
+        "source": {
+          "id": "c47698ca-2566-4567-bab5-556d725e4f0b"
+        },
+        "target": {
+          "id": "81394186-8a01-4b5a-a839-7fcf2fe8ab8f"
+        },
+        "z": 0
+      },
+      "fe761261-fe4b-47a2-b4aa-808e29cd6e32": {
+        "source": {
+          "id": "c47698ca-2566-4567-bab5-556d725e4f0b"
+        },
+        "target": {
+          "id": "54ad68ff-deec-476c-8e44-083967ff8466"
+        },
+        "z": 0
       }
     }
   },
   "Resources": {
+    "EC2SRTA5CE9M": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "EC2S55WZ9"
+        },
+        "RouteTableId": {
+          "Ref": "EC2RT2FC3V"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "fe761261-fe4b-47a2-b4aa-808e29cd6e32"
+        }
+      }
+    },
+    "EC2SRTA7DW2K": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "EC2S3XWBK"
+        },
+        "RouteTableId": {
+          "Ref": "EC2RT2FC3V"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "5b20b6be-28fe-4ade-8242-df1776b98416"
+        }
+      }
+    },
+    "EC2SRTA4FI2B": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "EC2S4NK5R"
+        },
+        "RouteTableId": {
+          "Ref": "EC2RT2FC3V"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "5c75f0d7-9be7-4789-b290-a0464a3a7694"
+        }
+      }
+    },
     "EC2VPC46G7W": {
       "Type": "AWS::EC2::VPC",
       "Properties": {
