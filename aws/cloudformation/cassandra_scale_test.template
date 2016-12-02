@@ -176,9 +176,6 @@
         "z": 2,
         "parent": "7c36998f-e0db-4558-b8d2-774415849ea2",
         "embeds": [],
-        "dependson": [
-          "d1a555f6-ef92-43c3-9062-a77b13142167"
-        ],
         "isrelatedto": [
           "aadf922d-6c94-41f0-87d1-b268a896f6ff"
         ]
@@ -384,10 +381,7 @@
         "AWS::CloudFormation::Designer": {
           "id": "0b662c73-b3cd-433f-8d7c-63a61324edc4"
         }
-      },
-      "DependsOn": [
-        "EC2VPC46G7W"
-      ]
+      }
     }
   }
 }
