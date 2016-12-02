@@ -10,11 +10,6 @@
         "RouteTableId": {
           "Ref": "NATRouting"
         }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "fe761261-fe4b-47a2-b4aa-808e29cd6e32"
-        }
       }
     },
     "SubnetDataUSEast1BToNATRouting": {
@@ -26,11 +21,6 @@
         "RouteTableId": {
           "Ref": "NATRouting"
         }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "5b20b6be-28fe-4ade-8242-df1776b98416"
-        }
       }
     },
     "SubnetDataUSEast1DToNATRouting": {
@@ -41,11 +31,6 @@
         },
         "RouteTableId": {
           "Ref": "NATRouting"
-        }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "5c75f0d7-9be7-4789-b290-a0464a3a7694"
         }
       }
     },
@@ -61,11 +46,6 @@
             "Value": "Cassandra Scale Test"
           }
         ]
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "d1a555f6-ef92-43c3-9062-a77b13142167"
-        }
       }
     },
     "SubnetDMZ01": {
@@ -75,11 +55,6 @@
         "CidrBlock": "10.0.0.0/24",
         "VpcId": {
           "Ref": "CassandraScaleTestVPC"
-        }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "7c36998f-e0db-4558-b8d2-774415849ea2"
         }
       }
     },
@@ -91,11 +66,6 @@
         "VpcId": {
           "Ref": "CassandraScaleTestVPC"
         }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "54ad68ff-deec-476c-8e44-083967ff8466"
-        }
       }
     },
     "SubnetData01USEast1B": {
@@ -105,11 +75,6 @@
         "CidrBlock": "10.0.2.0/24",
         "VpcId": {
           "Ref": "CassandraScaleTestVPC"
-        }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "81394186-8a01-4b5a-a839-7fcf2fe8ab8f"
         }
       }
     },
@@ -121,21 +86,11 @@
         "VpcId": {
           "Ref": "CassandraScaleTestVPC"
         }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "0f02a986-8bba-4a91-ad61-b12dd520995e"
-        }
       }
     },
     "IGW": {
       "Type": "AWS::EC2::InternetGateway",
-      "Properties": {},
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "26b51174-5135-4722-a87c-26a7814ea2f0"
-        }
-      }
+      "Properties": {}
     },
     "IGWToCassandraScaleTestVPC": {
       "Type": "AWS::EC2::VPCGatewayAttachment",
@@ -146,22 +101,12 @@
         "VpcId": {
           "Ref": "CassandraScaleTestVPC"
         }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "d8214dd5-0b22-4b50-9dbd-a70344377d04"
-        }
       }
     },
     "NATElasticIP": {
       "Type": "AWS::EC2::EIP",
       "Properties": {
         "Domain": "vpc"
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "aadf922d-6c94-41f0-87d1-b268a896f6ff"
-        }
       }
     },
     "NATRouting": {
@@ -169,11 +114,6 @@
       "Properties": {
         "VpcId": {
           "Ref": "CassandraScaleTestVPC"
-        }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "c47698ca-2566-4567-bab5-556d725e4f0b"
         }
       }
     },
@@ -186,11 +126,6 @@
         "DestinationCidrBlock": "0.0.0.0/0",
         "NatGatewayId": {
           "Ref": "NAT"
-        }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "cc18a932-bc75-41db-a425-9b3ff361f9c3"
         }
       },
       "DependsOn": [
@@ -208,11 +143,6 @@
         },
         "SubnetId": {
           "Ref": "SubnetDMZ01"
-        }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "0b662c73-b3cd-433f-8d7c-63a61324edc4"
         }
       }
     }
