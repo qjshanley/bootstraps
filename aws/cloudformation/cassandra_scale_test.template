@@ -5,7 +5,7 @@
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {
         "SubnetId": {
-          "Ref": "SubnetDataUSEast1A"
+          "Ref": "SubnetData01USEast1A"
         },
         "RouteTableId": {
           "Ref": "NATRouting"
@@ -21,7 +21,7 @@
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {
         "SubnetId": {
-          "Ref": "SubnetDataUSEast1B"
+          "Ref": "SubnetData01USEast1B"
         },
         "RouteTableId": {
           "Ref": "NATRouting"
@@ -37,7 +37,7 @@
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {
         "SubnetId": {
-          "Ref": "SubnetDataUSEast1D"
+          "Ref": "SubnetData01USEast1D"
         },
         "RouteTableId": {
           "Ref": "NATRouting"
@@ -68,7 +68,7 @@
         }
       }
     },
-    "SubnetDMZ": {
+    "SubnetDMZ01": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
         "AvailabilityZone": "us-east-1a",
@@ -83,7 +83,7 @@
         }
       }
     },
-    "SubnetDataUSEast1A": {
+    "SubnetData01USEast1A": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
         "AvailabilityZone": "us-east-1a",
@@ -98,7 +98,7 @@
         }
       }
     },
-    "SubnetDataUSEast1B": {
+    "SubnetData01USEast1B": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
         "AvailabilityZone": "us-east-1b",
@@ -113,7 +113,7 @@
         }
       }
     },
-    "SubnetDataUSEast1D": {
+    "SubnetData01USEast1D": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
         "AvailabilityZone": "us-east-1d",
@@ -207,7 +207,7 @@
           ]
         },
         "SubnetId": {
-          "Ref": "SubnetDMZ"
+          "Ref": "SubnetDMZ01"
         }
       },
       "Metadata": {
