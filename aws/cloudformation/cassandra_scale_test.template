@@ -32,7 +32,8 @@
         "z": 1,
         "parent": "d1a555f6-ef92-43c3-9062-a77b13142167",
         "embeds": [
-          "aadf922d-6c94-41f0-87d1-b268a896f6ff"
+          "aadf922d-6c94-41f0-87d1-b268a896f6ff",
+          "0b662c73-b3cd-433f-8d7c-63a61324edc4"
         ]
       },
       "54ad68ff-deec-476c-8e44-083967ff8466": {
@@ -140,6 +141,9 @@
         ],
         "dependson": [
           "26b51174-5135-4722-a87c-26a7814ea2f0"
+        ],
+        "isrelatedto": [
+          "0b662c73-b3cd-433f-8d7c-63a61324edc4"
         ]
       },
       "b7bd1c20-7b66-4cc5-8c50-300381cd83fa": {
@@ -157,6 +161,34 @@
         },
         "target": {
           "id": "26b51174-5135-4722-a87c-26a7814ea2f0"
+        },
+        "z": 3
+      },
+      "0b662c73-b3cd-433f-8d7c-63a61324edc4": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 380,
+          "y": 160
+        },
+        "z": 2,
+        "parent": "7c36998f-e0db-4558-b8d2-774415849ea2",
+        "embeds": [],
+        "dependson": [
+          "d1a555f6-ef92-43c3-9062-a77b13142167"
+        ],
+        "isrelatedto": [
+          "aadf922d-6c94-41f0-87d1-b268a896f6ff"
+        ]
+      },
+      "0a79c0a7-2e45-4e8d-88bd-c9c40922088c": {
+        "source": {
+          "id": "0b662c73-b3cd-433f-8d7c-63a61324edc4"
+        },
+        "target": {
+          "id": "d1a555f6-ef92-43c3-9062-a77b13142167"
         },
         "z": 3
       }
@@ -322,8 +354,8 @@
           "Ref": "EC2RT2FC3V"
         },
         "DestinationCidrBlock": "0.0.0.0/0",
-        "GatewayId": {
-          "Ref": "EC2IG4LYZX"
+        "NatGatewayId": {
+          "Ref": "EC2NG192I5"
         }
       },
       "Metadata": {
@@ -333,6 +365,28 @@
       },
       "DependsOn": [
         "EC2IG4LYZX"
+      ]
+    },
+    "EC2NG192I5": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "EC2EIPIFZY",
+            "AllocationId"
+          ]
+        },
+        "SubnetId": {
+          "Ref": "EC2S1ENEY"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "0b662c73-b3cd-433f-8d7c-63a61324edc4"
+        }
+      },
+      "DependsOn": [
+        "EC2VPC46G7W"
       ]
     }
   }
