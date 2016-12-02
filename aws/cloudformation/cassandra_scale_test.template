@@ -1,14 +1,14 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Resources": {
-    "EC2SRTA5CE9M": {
+    "SubnetDataUSEast1AToNATRouting": {
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {
         "SubnetId": {
-          "Ref": "EC2S55WZ9"
+          "Ref": "SubnetDataUSEast1A"
         },
         "RouteTableId": {
-          "Ref": "EC2RT2FC3V"
+          "Ref": "NATRouting"
         }
       },
       "Metadata": {
@@ -17,14 +17,14 @@
         }
       }
     },
-    "EC2SRTA7DW2K": {
+    "SubnetDataUSEast1BToNATRouting": {
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {
         "SubnetId": {
-          "Ref": "EC2S3XWBK"
+          "Ref": "SubnetDataUSEast1B"
         },
         "RouteTableId": {
-          "Ref": "EC2RT2FC3V"
+          "Ref": "NATRouting"
         }
       },
       "Metadata": {
@@ -33,14 +33,14 @@
         }
       }
     },
-    "EC2SRTA4FI2B": {
+    "SubnetDataUSEast1DToNATRouting": {
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {
         "SubnetId": {
-          "Ref": "EC2S4NK5R"
+          "Ref": "SubnetDataUSEast1D"
         },
         "RouteTableId": {
-          "Ref": "EC2RT2FC3V"
+          "Ref": "NATRouting"
         }
       },
       "Metadata": {
@@ -49,7 +49,7 @@
         }
       }
     },
-    "EC2VPC46G7W": {
+    "CassandraScaleTestVPC": {
       "Type": "AWS::EC2::VPC",
       "Properties": {
         "CidrBlock": "10.0.0.0/16",
@@ -68,19 +68,13 @@
         }
       }
     },
-    "EC2S1ENEY": {
+    "SubnetDMZ": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
         "AvailabilityZone": "us-east-1a",
         "CidrBlock": "10.0.0.0/24",
-        "Tags": [
-          {
-            "Key": "Name",
-            "Value": "dmz"
-          }
-        ],
         "VpcId": {
-          "Ref": "EC2VPC46G7W"
+          "Ref": "CassandraScaleTestVPC"
         }
       },
       "Metadata": {
@@ -89,19 +83,13 @@
         }
       }
     },
-    "EC2S55WZ9": {
+    "SubnetDataUSEast1A": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
         "AvailabilityZone": "us-east-1a",
         "CidrBlock": "10.0.1.0/24",
-        "Tags": [
-          {
-            "Key": "Name",
-            "Value": "data_us-east-1a"
-          }
-        ],
         "VpcId": {
-          "Ref": "EC2VPC46G7W"
+          "Ref": "CassandraScaleTestVPC"
         }
       },
       "Metadata": {
@@ -110,19 +98,13 @@
         }
       }
     },
-    "EC2S3XWBK": {
+    "SubnetDataUSEast1B": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
         "AvailabilityZone": "us-east-1b",
         "CidrBlock": "10.0.2.0/24",
-        "Tags": [
-          {
-            "Key": "Name",
-            "Value": "data_us-east-1b"
-          }
-        ],
         "VpcId": {
-          "Ref": "EC2VPC46G7W"
+          "Ref": "CassandraScaleTestVPC"
         }
       },
       "Metadata": {
@@ -131,19 +113,13 @@
         }
       }
     },
-    "EC2S4NK5R": {
+    "SubnetDataUSEast1D": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
         "AvailabilityZone": "us-east-1d",
         "CidrBlock": "10.0.3.0/24",
-        "Tags": [
-          {
-            "Key": "Name",
-            "Value": "data_us-east-1d"
-          }
-        ],
         "VpcId": {
-          "Ref": "EC2VPC46G7W"
+          "Ref": "CassandraScaleTestVPC"
         }
       },
       "Metadata": {
@@ -152,7 +128,7 @@
         }
       }
     },
-    "EC2IG4LYZX": {
+    "IGW": {
       "Type": "AWS::EC2::InternetGateway",
       "Properties": {},
       "Metadata": {
@@ -161,14 +137,14 @@
         }
       }
     },
-    "EC2VPCG13H5W": {
+    "IGWToCassandraScaleTestVPC": {
       "Type": "AWS::EC2::VPCGatewayAttachment",
       "Properties": {
         "InternetGatewayId": {
-          "Ref": "EC2IG4LYZX"
+          "Ref": "IGW"
         },
         "VpcId": {
-          "Ref": "EC2VPC46G7W"
+          "Ref": "CassandraScaleTestVPC"
         }
       },
       "Metadata": {
@@ -177,7 +153,7 @@
         }
       }
     },
-    "EC2EIPIFZY": {
+    "NATElasticIP": {
       "Type": "AWS::EC2::EIP",
       "Properties": {
         "Domain": "vpc"
@@ -188,11 +164,11 @@
         }
       }
     },
-    "EC2RT2FC3V": {
+    "NATRouting": {
       "Type": "AWS::EC2::RouteTable",
       "Properties": {
         "VpcId": {
-          "Ref": "EC2VPC46G7W"
+          "Ref": "CassandraScaleTestVPC"
         }
       },
       "Metadata": {
@@ -201,15 +177,15 @@
         }
       }
     },
-    "EC2RWVVT": {
+    "RouteToNAT": {
       "Type": "AWS::EC2::Route",
       "Properties": {
         "RouteTableId": {
-          "Ref": "EC2RT2FC3V"
+          "Ref": "NATRouting"
         },
         "DestinationCidrBlock": "0.0.0.0/0",
         "NatGatewayId": {
-          "Ref": "EC2NG192I5"
+          "Ref": "NAT"
         }
       },
       "Metadata": {
@@ -218,20 +194,20 @@
         }
       },
       "DependsOn": [
-        "EC2IG4LYZX"
+        "IGW"
       ]
     },
-    "EC2NG192I5": {
+    "NAT": {
       "Type": "AWS::EC2::NatGateway",
       "Properties": {
         "AllocationId": {
           "Fn::GetAtt": [
-            "EC2EIPIFZY",
+            "NATElasticIP",
             "AllocationId"
           ]
         },
         "SubnetId": {
-          "Ref": "EC2S1ENEY"
+          "Ref": "SubnetDMZ"
         }
       },
       "Metadata": {
