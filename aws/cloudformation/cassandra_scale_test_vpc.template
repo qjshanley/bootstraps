@@ -1,0 +1,192 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Resources": {
+		"CassandraScaleTestVPC": {
+			"Type": "AWS::EC2::VPC",
+			"Properties": {
+				"CidrBlock": "10.0.0.0/16",
+				"EnableDnsSupport": true,
+				"EnableDnsHostnames": true,
+				"Tags": [ { "Key": "Name", "Value": "Cassandra Scale Test" } ]
+			}
+		},
+		"SubnetDMZ000": {
+			"Type": "AWS::EC2::Subnet",
+			"Properties": {
+				"AvailabilityZone": "us-east-1a",
+				"CidrBlock": "10.0.0.0/24",
+				"VpcId": { "Ref": "CassandraScaleTestVPC" },
+				"Tags": [ { "Key": "Name", "Value": "SubnetDMZ000" } ]
+			}
+		},
+		"SubnetData001": {
+			"Type": "AWS::EC2::Subnet",
+			"Properties": {
+				"AvailabilityZone": "us-east-1a",
+				"CidrBlock": "10.0.1.0/24",
+				"VpcId": { "Ref": "CassandraScaleTestVPC" },
+				"Tags": [ { "Key": "Name", "Value": "SubnetData001" } ]
+			}
+		},
+		"SubnetData002": {
+			"Type": "AWS::EC2::Subnet",
+			"Properties": {
+				"AvailabilityZone": "us-east-1b",
+				"CidrBlock": "10.0.2.0/24",
+				"VpcId": { "Ref": "CassandraScaleTestVPC" },
+				"Tags": [ { "Key": "Name", "Value": "SubnetData002" } ]
+			}
+		},
+		"SubnetData003": {
+			"Type": "AWS::EC2::Subnet",
+			"Properties": {
+				"AvailabilityZone": "us-east-1d",
+				"CidrBlock": "10.0.3.0/24",
+				"VpcId": { "Ref": "CassandraScaleTestVPC" },
+				"Tags": [ { "Key": "Name", "Value": "SubnetData003" } ]
+			}
+		},
+		"NAT": {
+			"Type": "AWS::EC2::NatGateway",
+			"Properties": {
+				"AllocationId": { "Fn::GetAtt": [ "NATElasticIP", "AllocationId" ] },
+				"SubnetId": { "Ref": "SubnetDMZ000" }
+			}
+		},
+		"NATElasticIP": {
+			"Type": "AWS::EC2::EIP",
+			"Properties": { "Domain": "vpc" }
+		},
+		"IGW": {
+			"Type": "AWS::EC2::InternetGateway",
+			"Properties": {}
+		},
+		"IGWToCassandraScaleTestVPC": {
+			"Type": "AWS::EC2::VPCGatewayAttachment",
+			"Properties": {
+				"InternetGatewayId": { "Ref": "IGW" },
+				"VpcId": { "Ref": "CassandraScaleTestVPC" }
+			}
+		},
+		"SubnetDMZ000ToIGWRouting": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": {
+				"SubnetId": { "Ref": "SubnetDMZ000" },
+				"RouteTableId": { "Ref": "IGWRouting" }
+			}
+		},
+		"SubnetData001ToNATRouting": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": {
+				"SubnetId": { "Ref": "SubnetData001" },
+				"RouteTableId": { "Ref": "NATRouting" }
+			}
+		},
+		"SubnetData002ToNATRouting": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": {
+				"SubnetId": { "Ref": "SubnetData002" },
+				"RouteTableId": { "Ref": "NATRouting" }
+			}
+		},
+		"SubnetData003ToNATRouting": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": {
+				"SubnetId": { "Ref": "SubnetData003" },
+				"RouteTableId": { "Ref": "NATRouting" }
+			}
+		},
+		"NATRouting": {
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": {
+				"VpcId": { "Ref": "CassandraScaleTestVPC" }
+			}
+		},
+		"RouteToNAT": {
+			"Type": "AWS::EC2::Route",
+			"Properties": {
+				"RouteTableId": { "Ref": "NATRouting" },
+				"DestinationCidrBlock": "0.0.0.0/0",
+				"NatGatewayId": { "Ref": "NAT" }
+			},
+			"DependsOn": [ "IGW" ]
+		},
+		"IGWRouting": {
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": {
+				"VpcId": { "Ref": "CassandraScaleTestVPC" }
+			}
+		},
+		"RouteToIGW": {
+			"Type": "AWS::EC2::Route",
+			"Properties": {
+				"RouteTableId": { "Ref": "IGWRouting" },
+				"DestinationCidrBlock": "0.0.0.0/0",
+				"GatewayId": { "Ref": "IGW" }
+			},
+			"DependsOn": [ "IGW" ]
+		},
+		"DMZSecurityGroup" : {
+			"Type" : "AWS::EC2::SecurityGroup",
+			"Properties" : {
+				"GroupDescription" : "Allow SSH to these DMZ instances",
+				"VpcId" : { "Ref" : "CassandraScaleTestVPC" },
+				"SecurityGroupIngress" : [
+					{ "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0" }
+				]
+			}
+		},
+		"CassandraLC": {
+			"Type": "AWS::AutoScaling::LaunchConfiguration",
+			"Properties": {
+				"ImageId": "ami-40d28157",
+				"EbsOptimized": "false",
+				"InstanceType": "m3.xlarge",
+				"KeyName": "cassandraScaleTest",
+				"SpotPrice":".06",
+				"BlockDeviceMappings": [
+					{ "DeviceName": "/dev/sdc", "VirtualName": "ephemeral2" },
+					{ "DeviceName": "/dev/sdb", "VirtualName": "ephemeral1" },
+					{ "DeviceName": "/dev/sda1", "Ebs": { "DeleteOnTermination": true, "VolumeSize": 8, "VolumeType": "gp2" } }
+				],
+				"UserData": {
+					"Fn::Base64": {
+						"Fn::Join": [
+							"\n",
+							[
+								"#!/bin/bash",
+								"roll=cassandra-scale-test",
+								"cd /tmp",
+								"netstat -nr > /tmp/netstat.out",
+								"ping -c 20 www.google.com > /tmp/ping_google.out",
+								"apt-get update -y; apt-get upgrade -y; apt-get install -y unzip",
+								"wget https://github.com/qjshanley/cassandra_scale_test/archive/master.zip",
+								"unzip master.zip",
+								"bash cassandra_scale_test*/cassandra_bootstrap"
+							]
+						]
+					}
+				}
+			}
+		},
+		"CassandraASG": {
+			"UpdatePolicy": {
+				"AutoScalingRollingUpdate": {
+					"MinInstancesInService": "2",
+					"MaxBatchSize": "1"
+				}
+			},
+			"Type": "AWS::AutoScaling::AutoScalingGroup",
+			"Version": "2009-05-15",
+			"Properties": {
+				"LaunchConfigurationName": { "Ref": "CassandraLC" },
+				"VPCZoneIdentifier": [ { "Ref" : "SubnetData001" } ],
+				"Tags": [ { "Key": "Role", "Value": "common", "PropagateAtLaunch": "true" } ],
+				"AvailabilityZones": [ "us-east-1a" ],
+				"MinSize": "1",
+				"MaxSize": "3",
+				"Cooldown": "300"
+			}
+		}
+	}
+}
