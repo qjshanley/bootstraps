@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Public Subnets
+Parameters: 
+  SomeVpc: 
+    Type: "AWS::EC2::VPC::Id"
+    Description: >
+      Enter the stack name of the VPC stack the subnets should be placed 
+      into. The VPC stack MUST output the VPC ID and the CIDR block.
+Mappings:
+  SubnetConfig:
+    Public01:  { Az: us-west-2a, Cidr: x.x.100.0/24 }
+    Public02:  { Az: us-west-2b, Cidr: x.x.101.0/24 }
+    Public03:  { Az: us-west-2c, Cidr: x.x.102.0/24 }
+Resources:
+
+  #
+  # create the subnets
+  #
+  PublicSubnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, Public01, Az ]
+      CidrBlock: 
+        !Join
+          - "."  
+          - - !Select [ 0, !Split [".", !ImportValue "Foobar-VPC:CidrBlock" ] ]
+            - !Select [ 1, !Split [".", !ImportValue "Foobar-VPC:CidrBlock" ] ]
+            - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, Public01, Cidr ] ] ]
+            - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, Public01, Cidr ] ] ]
+      VpcId: 
+        Fn::ImportValue: 
+          !Sub "${VpcStackName}:Id"
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", !FindInMap [ SubnetConfig, Public01, Az ] ] ] } ]
+  PublicSubnet02:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, Public02, Az ]
+      CidrBlock: 
+        !Join
+          - "."  
+          - - !Select [ 0, !Split [".", !ImportValue "Foobar-VPC:CidrBlock" ] ]
+            - !Select [ 1, !Split [".", !ImportValue "Foobar-VPC:CidrBlock" ] ]
+            - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, Public02, Cidr ] ] ]
+            - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, Public02, Cidr ] ] ]
+      VpcId: 
+        Fn::ImportValue: 
+          !Sub "${VpcStackName}:Id"
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", !FindInMap [ SubnetConfig, Public02, Az ] ] ] } ]
+  PublicSubnet03:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, Public03, Az ]
+      CidrBlock: 
+        !Join
+          - "."  
+          - - !Select [ 0, !Split [".", !ImportValue "Foobar-VPC:CidrBlock" ] ]
+            - !Select [ 1, !Split [".", !ImportValue "Foobar-VPC:CidrBlock" ] ]
+            - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, Public03, Cidr ] ] ]
+            - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, Public03, Cidr ] ] ]
+      VpcId: 
+        Fn::ImportValue: 
+          !Sub "${VpcStackName}:Id"
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", !FindInMap [ SubnetConfig, Public03, Az ] ] ] } ]
+
+  #
+  # create the internet gateway and attach it to the VPC
+  #
+  Igw01:
+    Type: AWS::EC2::InternetGateway
+    Properties: 
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "IGW" ] ] } ]
+  Igw01ToVpc01Attachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref Igw01
+      VpcId: 
+        Fn::ImportValue: 
+          !Sub "${VpcStackName}:Id"
+
+  #
+  # setup routing
+  #
+  Igw01RouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: Igw01ToVpc01Attachment
+    Properties:
+      VpcId: 
+        Fn::ImportValue: 
+          !Sub "${VpcStackName}:Id"
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "IGW" ] ] } ]
+  RouteToIgw01:
+    Type: AWS::EC2::Route
+    Properties:
+      GatewayId: !Ref Igw01
+      RouteTableId: !Ref Igw01RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+  PublicSubnet01ToIgw01RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet01
+      RouteTableId: !Ref Igw01RouteTable
+  PublicSubnet02ToIgw01RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet02
+      RouteTableId: !Ref Igw01RouteTable
+  PublicSubnet03ToIgw01RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet03
+      RouteTableId: !Ref Igw01RouteTable
+
+#
+# define outputs
+#
+Outputs:
+  PublicSubnet01:
+    Description: The subnet ID used for public web servers
+    Value: !Ref PublicSubnet01
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "Id" ] ]
+  PublicSubnet02:
+    Description: The subnet ID used for public web servers
+    Value: !Ref PublicSubnet02
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "Id" ] ]
+  PublicSubnet03:
+    Description: The subnet ID used for public web servers
+    Value: !Ref PublicSubnet03
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "Id" ] ]

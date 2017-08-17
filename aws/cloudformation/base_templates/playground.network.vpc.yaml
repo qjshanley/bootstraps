@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: VPC Configuration
+Resources:
+  Vpc01:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.1.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags: [ { Key: Name, Value: !Sub "${AWS::StackName}" } ]
+Outputs:
+  Vpc01:
+    Description: VPC ID
+    Value: !Ref Vpc01
+    Export:
+      Name: !Sub "${AWS::StackName}:Id"
+  Vpc01CidrBlock:
+    Description: VPC CIDR Block
+    Value: !GetAtt Vpc01.CidrBlock
+    Export:
+      Name: !Sub "${AWS::StackName}:CidrBlock"
