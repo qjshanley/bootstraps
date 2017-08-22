@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Network scaffolding
+Mappings:
+  SubnetConfig:
+    Vpc:     { Cidr: 10.1.0.0/16 }
+    Bastion:  { Az: us-west-2a, Cidr: 10.1.0.0/26 }
+    Subnet01: { Az: us-west-2a, Cidr: 10.1.0.64/26 }
+    Subnet02: { Az: us-west-2b, Cidr: 10.1.0.128/26 }
+    Subnet03: { Az: us-west-2c, Cidr: 10.1.0.192/26 }
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !FindInMap [ SubnetConfig, Vpc, Cidr ]
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "VPC" ] ] } ]
+  BastionSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, Bastion, Az ]
+      CidrBlock: !FindInMap [ SubnetConfig, Bastion, Cidr ]
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: true
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "BastionSubnet", !FindInMap [ SubnetConfig, Bastion, Az ] ] ] } ]
+  PublicSubnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, Subnet01, Az ]
+      CidrBlock: !FindInMap [ SubnetConfig, Subnet01, Cidr ]
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: true
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet01, Az ] ] ] } ]
+  PublicSubnet02:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, Subnet02, Az ]
+      CidrBlock: !FindInMap [ SubnetConfig, Subnet02, Cidr ]
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: true
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet02, Az ] ] ] } ]
+  PublicSubnet03:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, Subnet03, Az ]
+      CidrBlock: !FindInMap [ SubnetConfig, Subnet03, Cidr ]
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: true
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet03, Az ] ] ] } ]
+
+  #
+  # Configure IGW
+  #
+  Igw01:
+    Type: AWS::EC2::InternetGateway
+    Properties: 
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "IGW" ] ] } ]
+  Igw01ToVpcAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref Igw01
+      VpcId: !Ref Vpc
+  Igw01RouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: Igw01ToVpcAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "RT", "IGW" ] ] } ]
+  RouteToIgw01:
+    Type: AWS::EC2::Route
+    Properties:
+      GatewayId: !Ref Igw01
+      RouteTableId: !Ref Igw01RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+
+  #
+  # IGW Associations
+  #
+  BastionSubnetToIgw01RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref BastionSubnet
+      RouteTableId: !Ref Igw01RouteTable
+  PublicSubnet01ToIgw01RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet01
+      RouteTableId: !Ref Igw01RouteTable
+  PublicSubnet02ToIgw01RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet02
+      RouteTableId: !Ref Igw01RouteTable
+  PublicSubnet03ToIgw01RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet03
+      RouteTableId: !Ref Igw01RouteTable
+
+#
+# Outputs that can be referenced by other stacks
+#
+Outputs:
+  Vpc:
+    Description: The ID of the VPC
+    Value: !Ref Vpc
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "VPC" ] ]
+  Igw:
+    Description: Internet gateway ID attached to the VPC
+    Value: !Ref Igw01
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "IGW" ] ]
+  BastionSubnet:
+    Description: The subnet ID used for public web servers
+    Value: !Ref BastionSubnet
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "BastionSubnet", !FindInMap [ SubnetConfig, Bastion, Az ] ] ]
+  PublicSubnet01:
+    Description: The subnet ID used for public servers
+    Value: !Ref PublicSubnet01
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet01, Az ] ] ]
+  PublicSubnet02:
+    Description: The subnet ID used for public servers
+    Value: !Ref PublicSubnet02
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet02, Az ] ] ]
+  PublicSubnet03:
+    Description: The subnet ID used for public servers
+    Value: !Ref PublicSubnet03
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet03, Az ] ] ]

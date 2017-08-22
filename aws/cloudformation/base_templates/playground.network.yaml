@@ -2,13 +2,13 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: Network scaffolding
 Mappings:
   SubnetConfig:
-    Vpc01:     { Cidr: 10.1.0.0/16 }
-    Public01:  { Az: us-west-2a, Cidr: 10.1.100.0/24 }
-    Public02:  { Az: us-west-2b, Cidr: 10.1.101.0/24 }
-    Public03:  { Az: us-west-2c, Cidr: 10.1.102.0/24 }
-    Private01: { Az: us-west-2a, Cidr: 10.1.200.0/24 }
-    Private02: { Az: us-west-2b, Cidr: 10.1.201.0/24 }
-    Private03: { Az: us-west-2c, Cidr: 10.1.202.0/24 }
+    Vpc01:     { Cidr: 20.1.0.0/16 }
+    Public01:  { Az: us-west-2a, Cidr: 20.1.100.0/24 }
+    Public02:  { Az: us-west-2b, Cidr: 20.1.101.0/24 }
+    Public03:  { Az: us-west-2c, Cidr: 20.1.102.0/24 }
+    Private01: { Az: us-west-2a, Cidr: 20.1.200.0/24 }
+    Private02: { Az: us-west-2b, Cidr: 20.1.201.0/24 }
+    Private03: { Az: us-west-2c, Cidr: 20.1.202.0/24 }
 Resources:
   Vpc01:
     Type: AWS::EC2::VPC

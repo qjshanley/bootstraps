@@ -1,0 +1,48 @@
+  #
+  # Configure NAT
+  #
+  Nat01:
+    Type: AWS::EC2::NatGateway
+    DependsOn: Igw01ToVpcAttachment
+    Properties:
+      AllocationId: !GetAtt [ NatElasticIp, AllocationId ]
+      SubnetId: !Ref PublicSubnet01
+  NatElasticIp:
+    Type: AWS::EC2::EIP
+    Properties: { Domain: vpc }
+  Nat01RouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: Igw01ToVpcAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "NAT" ] ] } ]
+  RouteToNat01:
+    Type: AWS::EC2::Route
+    Properties:
+      NatGatewayId: !Ref Nat01
+      RouteTableId: !Ref Nat01RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+
+  #
+  # NAT Associations
+  #
+  PublicSubnet01ToNat01RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet01
+      RouteTableId: !Ref Nat01RouteTable
+  PrivateSubnet01ToNat01RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet01
+      RouteTableId: !Ref Nat01RouteTable
+  PrivateSubnet02ToNat01RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet02
+      RouteTableId: !Ref Nat01RouteTable
+  PrivateSubnet03ToNat01RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet03
+      RouteTableId: !Ref Nat01RouteTable
