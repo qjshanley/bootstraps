@@ -47,6 +47,26 @@ Resources:
       VpcId: !Ref Vpc
       MapPublicIpOnLaunch: true
       Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet03, Az ] ] ] } ]
+  
+  #
+  # Define the default security group for the VPC
+  #
+  SecurityGroupHttpInbound:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt ["Vpc", "DefaultSecurityGroup"]
+      IpProtocol: tcp
+      FromPort: '80'
+      ToPort: '80'
+      CidrIp: 0.0.0.0/0
+  SecurityGroupHttpsInbound:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt ["Vpc", "DefaultSecurityGroup"]
+      IpProtocol: tcp
+      FromPort: '443'
+      ToPort: '443'
+      CidrIp: 0.0.0.0/0
 
   #
   # Configure IGW
@@ -65,7 +85,7 @@ Resources:
     DependsOn: Igw01ToVpcAttachment
     Properties:
       VpcId: !Ref Vpc
-      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "RT", "IGW" ] ] } ]
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "ToIGW" ] ] } ]
   RouteToIgw01:
     Type: AWS::EC2::Route
     Properties:
@@ -97,9 +117,6 @@ Resources:
       SubnetId: !Ref PublicSubnet03
       RouteTableId: !Ref Igw01RouteTable
 
-#
-# Outputs that can be referenced by other stacks
-#
 Outputs:
   Vpc:
     Description: The ID of the VPC
