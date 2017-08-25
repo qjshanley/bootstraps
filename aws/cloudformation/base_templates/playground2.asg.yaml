@@ -77,11 +77,36 @@ Resources:
       IamInstanceProfile: !Ref 'Ec2InstanceProfile'
       KeyName: !Ref 'KeyName'
       UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -xe
-          echo ECS_CLUSTER=${EcsCluster} >> /etc/ecs/ecs.config
-          yum install -y aws-cfn-bootstrap
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EcsAutoScalingGroup --region ${AWS::Region}
+        Fn::Base64: !Join
+        - ""
+        - - |
+              #!/bin/bash -xe
+              yum -y update --exclude=docker
+              yum install -y aws-cli aws-cfn-bootstrap
+
+              aws s3 cp --recursive s3://highly-ops/scripts/logging/ ./scripts/logging/
+              chmod 755 ./scripts/logging/le_agent_install.sh  &&  ./scripts/logging/le_agent_install.sh
+              chmod 755 ./scripts/logging/le_conf_webapp.sh  &&  ./scripts/logging/le_conf_webapp.sh
+              rm -rf ./scripts
+
+              aws s3 cp s3://highly-ops/dockercfg ~/.dockercfg
+              DOCKER_AUTH=$(cat ~/.dockercfg | tr '\n' ' ')
+
+              aws s3 cp s3://highly-ops/scripts/docker_cleanup.sh /root/docker_cleanup.sh
+              chmod 755 /root/docker_cleanup.sh
+
+              echo "ECS_ENGINE_AUTH_TYPE=dockercfg" >> /etc/ecs/ecs.config
+              echo "ECS_ENGINE_AUTH_DATA=${DOCKER_AUTH}" >> /etc/ecs/ecs.config
+          - !Sub |
+              echo "ECS_CLUSTER=${EcsCluster}" >> /etc/ecs/ecs.config
+          - |
+              echo "ECS_LOGLEVEL=warn" >> /etc/ecs/ecs.config
+              echo "ECS_RESERVED_MEMORY=256" >> /etc/ecs/ecs.config
+
+              cat /etc/ecs/ecs.config
+          - !Sub |
+              /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EcsAutoScalingGroup --region ${AWS::Region}
+
   Ec2Role:
     Type: AWS::IAM::Role
     Properties:
@@ -100,12 +125,20 @@ Resources:
             Action: ['ecs:CreateCluster', 'ecs:DeregisterContainerInstance', 'ecs:DiscoverPollEndpoint',
               'ecs:Poll', 'ecs:RegisterContainerInstance', 'ecs:StartTelemetrySession',
               'ecs:Submit*', 'logs:CreateLogStream', 'logs:PutLogEvents']
-            Resource: '*'
+            Resource: ['*']
+      - PolicyName: S3OpsReadOnly
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['s3:GetObject', 's3:GetObjectVersion', 's3:ListBucket', 's3:ListBucketVersions']
+            Resource: ["arn:aws:s3:::highly-ops", "arn:aws:s3:::highly-ops/*", 
+              "arn:aws:s3:::highly-ops-mongodb", "arn:aws:s3:::highly-ops-mongodb/*"]
   Ec2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: /
       Roles: [!Ref 'Ec2Role']
+
   Alb:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
