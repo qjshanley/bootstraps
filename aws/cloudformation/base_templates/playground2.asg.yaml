@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Creates the ECS Cluster, ASGs, Launch Configurations, Security Groups, and IAM Roles
+Description: Creates the ECS Cluster, ASG, Launch Configuration, Security Groups, and IAM Roles
 Parameters:
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
@@ -73,7 +73,6 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       ImageId: !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMIID]
-      SecurityGroups: [!Ref 'EcsSecurityGroup']
       InstanceType: !Ref 'InstanceType'
       IamInstanceProfile: !Ref 'Ec2InstanceProfile'
       KeyName: !Ref 'KeyName'
@@ -107,3 +106,48 @@ Resources:
     Properties:
       Path: /
       Roles: [!Ref 'Ec2Role']
+  Alb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Join [ "-", [ !Sub "${AWS::StackName}", "ALB" ] ]
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+      - Key: idle_timeout.timeout_seconds
+        Value: '30'
+      Subnets: !Ref 'SubnetIds'
+  ECSServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+      - PolicyName: ecs-service
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['elasticloadbalancing:DeregisterInstancesFromLoadBalancer', 'elasticloadbalancing:DeregisterTargets',
+              'elasticloadbalancing:Describe*', 'elasticloadbalancing:RegisterInstancesWithLoadBalancer',
+              'elasticloadbalancing:RegisterTargets', 'ec2:Describe*', 'ec2:AuthorizeSecurityGroupIngress']
+            Resource: '*'
+
+Outputs:
+  EcsCluster:
+    Description: The ID of the ECS Cluster
+    Value: !Ref EcsCluster
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "ECS-Cluster" ] ]
+  ECSServiceRole:
+    Description: The service role to use when deploying services to the ECS Cluster
+    Value: !Ref ECSServiceRole
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "ECS-Role" ] ]
+  Alb:
+    Description: The ID of the Application Load Balancer
+    Value: !Ref Alb
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "ALB" ] ]

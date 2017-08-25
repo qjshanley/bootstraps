@@ -7,20 +7,20 @@ Parameters:
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Select at two subnets in your selected VPC.
-  SecurityGroups:
-    Type: List<AWS::EC2::SecurityGroup::Id>
-    Description: Select the security groups the load balancer should be in.
+#  SecurityGroups:
+#    Type: List<AWS::EC2::SecurityGroup::Id>
+#    Description: Select the security groups the load balancer should be in.
 Resources:
-  ECSALB:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: ECSALB
-      Scheme: internet-facing
-      LoadBalancerAttributes:
-      - Key: idle_timeout.timeout_seconds
-        Value: '30'
-      Subnets: !Ref 'SubnetIds'
-      SecurityGroups: !Ref 'SecurityGroups'
+  # ECSALB:
+  #   Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+  #   Properties:
+  #     Name: !Sub "${AWS::StackName}"
+  #     Scheme: internet-facing
+  #     LoadBalancerAttributes:
+  #     - Key: idle_timeout.timeout_seconds
+  #       Value: '30'
+  #     Subnets: !Ref 'SubnetIds'
+  #     SecurityGroups: !Ref 'SecurityGroups'
   ALBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -32,7 +32,6 @@ Resources:
       Protocol: HTTP
   ECSALBListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    DependsOn: ALBListener
     Properties:
       Actions:
       - Type: forward
@@ -44,14 +43,13 @@ Resources:
       Priority: 1
   ECSTG:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    DependsOn: ECSALB
     Properties:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "TG" ] ]
       HealthCheckIntervalSeconds: 10
       HealthCheckPath: /
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
-      Name: ECSTG
       Port: 80
       Protocol: HTTP
       UnhealthyThresholdCount: 2

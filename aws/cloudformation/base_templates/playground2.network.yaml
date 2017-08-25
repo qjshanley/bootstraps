@@ -1,17 +1,24 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Network scaffolding
+Description: Creates the VPC, subnets, and configures default routing and security
+Parameters:
+  VpcCidrBlock:
+    Type: String 
+    Description: The IP address range for the VPC
+    MinLength: 9
+    MaxLength: 18
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
 Mappings:
   SubnetConfig:
-    Vpc:     { Cidr: 10.1.0.0/16 }
-    Bastion:  { Az: us-west-2a, Cidr: 10.1.0.0/26 }
-    Subnet01: { Az: us-west-2a, Cidr: 10.1.0.64/26 }
-    Subnet02: { Az: us-west-2b, Cidr: 10.1.0.128/26 }
-    Subnet03: { Az: us-west-2c, Cidr: 10.1.0.192/26 }
+    Bastion:  { Az: us-west-2a, Cidr: x.x.0.0/26 }
+    Subnet01: { Az: us-west-2a, Cidr: x.x.0.64/26 }
+    Subnet02: { Az: us-west-2b, Cidr: x.x.0.128/26 }
+    Subnet03: { Az: us-west-2c, Cidr: x.x.0.192/26 }
 Resources:
   Vpc:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: !FindInMap [ SubnetConfig, Vpc, Cidr ]
+      CidrBlock: !Ref VpcCidrBlock
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "VPC" ] ] } ]
@@ -19,7 +26,12 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !FindInMap [ SubnetConfig, Bastion, Az ]
-      CidrBlock: !FindInMap [ SubnetConfig, Bastion, Cidr ]
+      CidrBlock: !Join
+        - "."
+        - - !Select [ 0, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 1, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, Bastion, Cidr ] ] ]
+          - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, Bastion, Cidr ] ] ]
       VpcId: !Ref Vpc
       MapPublicIpOnLaunch: true
       Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "BastionSubnet", !FindInMap [ SubnetConfig, Bastion, Az ] ] ] } ]
@@ -27,7 +39,12 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !FindInMap [ SubnetConfig, Subnet01, Az ]
-      CidrBlock: !FindInMap [ SubnetConfig, Subnet01, Cidr ]
+      CidrBlock: !Join
+        - "."
+        - - !Select [ 0, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 1, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, Subnet01, Cidr ] ] ]
+          - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, Subnet01, Cidr ] ] ]
       VpcId: !Ref Vpc
       MapPublicIpOnLaunch: true
       Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet01, Az ] ] ] } ]
@@ -35,7 +52,12 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !FindInMap [ SubnetConfig, Subnet02, Az ]
-      CidrBlock: !FindInMap [ SubnetConfig, Subnet02, Cidr ]
+      CidrBlock: !Join
+        - "."
+        - - !Select [ 0, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 1, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, Subnet02, Cidr ] ] ]
+          - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, Subnet02, Cidr ] ] ]
       VpcId: !Ref Vpc
       MapPublicIpOnLaunch: true
       Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet02, Az ] ] ] } ]
@@ -43,13 +65,18 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !FindInMap [ SubnetConfig, Subnet03, Az ]
-      CidrBlock: !FindInMap [ SubnetConfig, Subnet03, Cidr ]
+      CidrBlock: !Join
+        - "."
+        - - !Select [ 0, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 1, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, Subnet03, Cidr ] ] ]
+          - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, Subnet03, Cidr ] ] ]
       VpcId: !Ref Vpc
       MapPublicIpOnLaunch: true
       Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet03, Az ] ] ] } ]
   
   #
-  # Define the default security group for the VPC
+  # Add ingress rules to the VPC's default security group
   #
   SecurityGroupHttpInbound:
     Type: AWS::EC2::SecurityGroupIngress
@@ -88,13 +115,14 @@ Resources:
       Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "ToIGW" ] ] } ]
   RouteToIgw01:
     Type: AWS::EC2::Route
+    DependsOn: Igw01ToVpcAttachment
     Properties:
       GatewayId: !Ref Igw01
       RouteTableId: !Ref Igw01RouteTable
       DestinationCidrBlock: 0.0.0.0/0
 
   #
-  # IGW Associations
+  # IGW Route Table Associations
   #
   BastionSubnetToIgw01RouteTable:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -118,33 +146,8 @@ Resources:
       RouteTableId: !Ref Igw01RouteTable
 
 Outputs:
-  Vpc:
+  VpcId:
     Description: The ID of the VPC
     Value: !Ref Vpc
     Export:
       Name: !Join [ ":", [ !Sub "${AWS::StackName}", "VPC" ] ]
-  Igw:
-    Description: Internet gateway ID attached to the VPC
-    Value: !Ref Igw01
-    Export:
-      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "IGW" ] ]
-  BastionSubnet:
-    Description: The subnet ID used for public web servers
-    Value: !Ref BastionSubnet
-    Export:
-      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "BastionSubnet", !FindInMap [ SubnetConfig, Bastion, Az ] ] ]
-  PublicSubnet01:
-    Description: The subnet ID used for public servers
-    Value: !Ref PublicSubnet01
-    Export:
-      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet01, Az ] ] ]
-  PublicSubnet02:
-    Description: The subnet ID used for public servers
-    Value: !Ref PublicSubnet02
-    Export:
-      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet02, Az ] ] ]
-  PublicSubnet03:
-    Description: The subnet ID used for public servers
-    Value: !Ref PublicSubnet03
-    Export:
-      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, Subnet03, Az ] ] ]

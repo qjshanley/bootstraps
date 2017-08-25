@@ -1,23 +1,60 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
-  EcsCluster:
+  Environment:
     Type: String
-    Description: Name of the ECS Cluster you want to deploy your service to.
-  TargetGroup:
-    Type: String
-    Description: Name of the Target Group your service should run in.
-  EcsSecurityGroup:
-    Type: AWS::EC2::SecurityGroup::Id
-    Description: Select the security group the load balancer should be in.
+    Description: Name of the environment you want to deploy your service to.
+  # TargetGroup:
+  #   Type: String
+  #   Description: Name of the Target Group your service should run in.
+#  EcsSecurityGroup:
+#    Type: AWS::EC2::SecurityGroup::Id
+#    Description: Select the security group the load balancer should be in.
 Resources:
-  EcsSecurityGroupALBports:
-    Type: AWS::EC2::SecurityGroupIngress
+  # EcsSecurityGroupALBports:
+  #   Type: AWS::EC2::SecurityGroupIngress
+  #   Properties:
+  #     GroupId: !Ref 'EcsSecurityGroup'
+  #     IpProtocol: tcp
+  #     FromPort: '31000'
+  #     ToPort: '61000'
+  #     SourceSecurityGroupId: !Ref 'EcsSecurityGroup'
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      GroupId: !Ref 'EcsSecurityGroup'
-      IpProtocol: tcp
-      FromPort: '31000'
-      ToPort: '61000'
-      SourceSecurityGroupId: !Ref 'EcsSecurityGroup'
+      Name: !Sub "${AWS::StackName}"
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 2
+      VpcId:
+        Fn::ImportValue:
+          !Join [ ":", [ !Sub "${Environment}-Network", "VPC" ] ]
+  AlbListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref 'TargetGroup'
+      LoadBalancerArn: 
+        Fn::ImportValue:
+          !Join [ ":", [ !Sub "${Environment}", "ALB" ] ]
+      Port: '80'
+      Protocol: HTTP
+  ECSAlbListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn: !Ref 'TargetGroup'
+      Conditions:
+      - Field: path-pattern
+        Values: [/]
+      ListenerArn: !Ref 'AlbListener'
+      Priority: 1
   CloudwatchLogsGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -70,86 +107,90 @@ Resources:
   service:
     Type: AWS::ECS::Service
     Properties:
-      Cluster: !Ref 'EcsCluster'
-      DesiredCount: '1'
+      Cluster:
+        Fn::ImportValue:
+          !Join [ ":", [ !Sub "${Environment}", "ECS-Cluster" ] ]
+      DesiredCount: 2
       LoadBalancers:
       - ContainerName: simple-app
         ContainerPort: '80'
         TargetGroupArn: !Ref 'TargetGroup'
-      Role: !Ref 'ECSServiceRole'
+      Role:
+        Fn::ImportValue:
+          !Join [ ":", [ !Sub "${Environment}", "ECS-Role" ] ]
       TaskDefinition: !Ref 'taskdefinition'
-  ECSServiceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service: [ecs.amazonaws.com]
-          Action: ['sts:AssumeRole']
-      Path: /
-      Policies:
-      - PolicyName: ecs-service
-        PolicyDocument:
-          Statement:
-          - Effect: Allow
-            Action: ['elasticloadbalancing:DeregisterInstancesFromLoadBalancer', 'elasticloadbalancing:DeregisterTargets',
-              'elasticloadbalancing:Describe*', 'elasticloadbalancing:RegisterInstancesWithLoadBalancer',
-              'elasticloadbalancing:RegisterTargets', 'ec2:Describe*', 'ec2:AuthorizeSecurityGroupIngress']
-            Resource: '*'
-  ServiceScalingTarget:
-    Type: AWS::ApplicationAutoScaling::ScalableTarget
-    DependsOn: service
-    Properties:
-      MaxCapacity: 2
-      MinCapacity: 1
-      ResourceId: !Join ['', [service/, !Ref 'EcsCluster', /, !GetAtt [service, Name]]]
-      RoleARN: !GetAtt [AutoscalingRole, Arn]
-      ScalableDimension: ecs:service:DesiredCount
-      ServiceNamespace: ecs
-  ServiceScalingPolicy:
-    Type: AWS::ApplicationAutoScaling::ScalingPolicy
-    Properties:
-      PolicyName: AStepPolicy
-      PolicyType: StepScaling
-      ScalingTargetId: !Ref 'ServiceScalingTarget'
-      StepScalingPolicyConfiguration:
-        AdjustmentType: PercentChangeInCapacity
-        Cooldown: 60
-        MetricAggregationType: Average
-        StepAdjustments:
-        - MetricIntervalLowerBound: 0
-          ScalingAdjustment: 200
-  ALB500sAlarmScaleUp:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      EvaluationPeriods: '1'
-      Statistic: Average
-      Threshold: '10'
-      AlarmDescription: Alarm if our ALB generates too many HTTP 500s.
-      Period: '60'
-      AlarmActions: [!Ref 'ServiceScalingPolicy']
-      Namespace: AWS/ApplicationELB
-      Dimensions:
-      - Name: ECSService
-        Value: !Ref 'service'
-      ComparisonOperator: GreaterThanThreshold
-      MetricName: HTTPCode_ELB_5XX_Count
-  AutoscalingRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service: [application-autoscaling.amazonaws.com]
-          Action: ['sts:AssumeRole']
-      Path: /
-      Policies:
-      - PolicyName: service-autoscaling
-        PolicyDocument:
-          Statement:
-          - Effect: Allow
-            Action: ['application-autoscaling:*', 'cloudwatch:DescribeAlarms', 'cloudwatch:PutMetricAlarm',
-              'ecs:DescribeServices', 'ecs:UpdateService']
-            Resource: '*'
+  # ECSServiceRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Statement:
+  #       - Effect: Allow
+  #         Principal:
+  #           Service: [ecs.amazonaws.com]
+  #         Action: ['sts:AssumeRole']
+  #     Path: /
+  #     Policies:
+  #     - PolicyName: ecs-service
+  #       PolicyDocument:
+  #         Statement:
+  #         - Effect: Allow
+  #           Action: ['elasticloadbalancing:DeregisterInstancesFromLoadBalancer', 'elasticloadbalancing:DeregisterTargets',
+  #             'elasticloadbalancing:Describe*', 'elasticloadbalancing:RegisterInstancesWithLoadBalancer',
+  #             'elasticloadbalancing:RegisterTargets', 'ec2:Describe*', 'ec2:AuthorizeSecurityGroupIngress']
+  #           Resource: '*'
+  # ServiceScalingTarget:
+  #   Type: AWS::ApplicationAutoScaling::ScalableTarget
+  #   DependsOn: service
+  #   Properties:
+  #     MaxCapacity: 2
+  #     MinCapacity: 1
+  #     ResourceId: !Join ['', [service/, !Ref 'EcsCluster', /, !GetAtt [service, Name]]]
+  #     RoleARN: !GetAtt [AutoscalingRole, Arn]
+  #     ScalableDimension: ecs:service:DesiredCount
+  #     ServiceNamespace: ecs
+  # ServiceScalingPolicy:
+  #   Type: AWS::ApplicationAutoScaling::ScalingPolicy
+  #   Properties:
+  #     PolicyName: AStepPolicy
+  #     PolicyType: StepScaling
+  #     ScalingTargetId: !Ref 'ServiceScalingTarget'
+  #     StepScalingPolicyConfiguration:
+  #       AdjustmentType: PercentChangeInCapacity
+  #       Cooldown: 60
+  #       MetricAggregationType: Average
+  #       StepAdjustments:
+  #       - MetricIntervalLowerBound: 0
+  #         ScalingAdjustment: 200
+  # ALB500sAlarmScaleUp:
+  #   Type: AWS::CloudWatch::Alarm
+  #   Properties:
+  #     EvaluationPeriods: '1'
+  #     Statistic: Average
+  #     Threshold: '10'
+  #     AlarmDescription: Alarm if our ALB generates too many HTTP 500s.
+  #     Period: '60'
+  #     AlarmActions: [!Ref 'ServiceScalingPolicy']
+  #     Namespace: AWS/ApplicationELB
+  #     Dimensions:
+  #     - Name: ECSService
+  #       Value: !Ref 'service'
+  #     ComparisonOperator: GreaterThanThreshold
+  #     MetricName: HTTPCode_ELB_5XX_Count
+  # AutoscalingRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Statement:
+  #       - Effect: Allow
+  #         Principal:
+  #           Service: [application-autoscaling.amazonaws.com]
+  #         Action: ['sts:AssumeRole']
+  #     Path: /
+  #     Policies:
+  #     - PolicyName: service-autoscaling
+  #       PolicyDocument:
+  #         Statement:
+  #         - Effect: Allow
+  #           Action: ['application-autoscaling:*', 'cloudwatch:DescribeAlarms', 'cloudwatch:PutMetricAlarm',
+  #             'ecs:DescribeServices', 'ecs:UpdateService']
+  #           Resource: '*'
