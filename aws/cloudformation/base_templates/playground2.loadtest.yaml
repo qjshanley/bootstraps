@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Some service
+Parameters:
+  Environment:
+    Type: String
+    Description: Name of the environment you want to deploy your service to.
+  Url:
+    Type: String
+    Description: URL of the site you want to loadtest.
+  DesiredCount:
+    Type: Number
+    Description: The number of tasks (copies) you want running for this service.
+Resources:
+  CloudwatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join ['-', [ECSLogGroup, !Ref 'AWS::StackName']]
+      RetentionInDays: 14
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Ref "AWS::StackName"
+      ContainerDefinitions:
+      - Name: AB-Loadtest
+        Image: qub3r/apache2-utils
+        Essential: true
+        Cpu: 10
+        Memory: 200
+        EntryPoint: [bash, -c]
+        Command: [!Join [ " ", [ "ab -c 50 -n 1000000", !Sub "${Url}" ] ] ]
+        PortMappings:
+        - ContainerPort: 80
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref 'CloudwatchLogsGroup'
+            awslogs-region: !Ref 'AWS::Region'
+            awslogs-stream-prefix: ecs-loadtest
+  service:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster:
+        Fn::ImportValue:
+          !Join [ ":", [ !Sub "${Environment}", "ECS-Cluster" ] ]
+      DesiredCount: !Ref DesiredCount
+      TaskDefinition: !Ref TaskDefinition
