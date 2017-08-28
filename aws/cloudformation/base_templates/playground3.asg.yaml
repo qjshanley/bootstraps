@@ -1,0 +1,190 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Creates the ECS Cluster, ASG, Launch Configuration, Security Groups, and IAM Roles
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Select a VPC that allows instances access to the Internet.
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Select at two subnets in your selected VPC.
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Select at two subnets in your selected VPC.
+  DesiredCapacity:
+    Type: Number
+    Default: '1'
+    Description: Number of instances to launch in your ECS cluster.
+  MinSize:
+    Type: Number
+    Default: '1'
+    Description: Minimum number of instances that can be launched in your ECS cluster.
+  MaxSize:
+    Type: Number
+    Default: '1'
+    Description: Maximum number of instances that can be launched in your ECS cluster.
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues: [ t2.nano, t2.micro, t2.small, t2.medium, t2.large, t2.xlarge, t2.2xlarge,
+      m4.large, m4.xlarge, m4.2xlarge, m4.4xlarge, m4.10xlarge, m4.16xlarge,
+      c4.large, c4.xlarge, c4.2xlarge, c4.4xlarge, c4.8xlarge,
+      r4.large, r4.xlarge, r4.2xlarge, r4.4xlarge, r4.8xlarge, r4.16xlarge,
+      i3.large, i3.xlarge, i3.2xlarge, i3.4xlarge, i3.8xlarge, i3.16xlarge]
+    ConstraintDescription: Please choose a valid instance type.
+Mappings:
+  AWSRegionToAMI:
+    us-east-1:
+      AMIID: ami-eca289fb
+    us-east-2:
+      AMIID: ami-446f3521
+    us-west-1:
+      AMIID: ami-9fadf8ff
+    us-west-2:
+      AMIID: ami-7abc111a
+    eu-west-1:
+      AMIID: ami-a1491ad2
+    eu-central-1:
+      AMIID: ami-54f5303b
+    ap-northeast-1:
+      AMIID: ami-9cd57ffd
+    ap-southeast-1:
+      AMIID: ami-a900a3ca
+    ap-southeast-2:
+      AMIID: ami-5781be34
+Resources:
+  DefaultCluster:
+    Type: AWS::ECS::Cluster
+  EcsAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: !Ref 'PrivateSubnetIds'
+      LaunchConfigurationName: !Ref 'ContainerInstances'
+      MinSize: !Ref 'MinSize'
+      MaxSize: !Ref 'MaxSize'
+      DesiredCapacity: !Ref 'DesiredCapacity'
+      Tags: [ { Key: Name, Value: !Join [ "-", [ !Sub "${AWS::StackName}", "DefaultCluster" ] ], PropagateAtLaunch: true } ]
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: true
+  ContainerInstances:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMIID]
+      InstanceType: !Ref 'InstanceType'
+      IamInstanceProfile: !Ref 'Ec2InstanceProfile'
+      KeyName: !Ref 'KeyName'
+      UserData:
+        Fn::Base64: !Join
+        - ""
+        - - |
+              #!/bin/bash -xe
+              yum -y update --exclude=docker
+              yum install -y aws-cli aws-cfn-bootstrap
+
+              aws s3 cp --recursive s3://highly-ops/scripts/logging/ ./scripts/logging/
+              chmod 755 ./scripts/logging/le_agent_install.sh  &&  ./scripts/logging/le_agent_install.sh
+              chmod 755 ./scripts/logging/le_conf_webapp.sh  &&  ./scripts/logging/le_conf_webapp.sh
+              rm -rf ./scripts
+
+              aws s3 cp s3://highly-ops/dockercfg ~/.dockercfg
+              DOCKER_AUTH=$(cat ~/.dockercfg | tr '\n' ' ')
+
+              aws s3 cp s3://highly-ops/scripts/docker_cleanup.sh /root/docker_cleanup.sh
+              chmod 755 /root/docker_cleanup.sh
+
+              echo "ECS_ENGINE_AUTH_TYPE=dockercfg" >> /etc/ecs/ecs.config
+              echo "ECS_ENGINE_AUTH_DATA=${DOCKER_AUTH}" >> /etc/ecs/ecs.config
+          - !Sub |
+              echo "ECS_CLUSTER=${DefaultCluster}" >> /etc/ecs/ecs.config
+          - |
+              echo "ECS_LOGLEVEL=warn" >> /etc/ecs/ecs.config
+              echo "ECS_RESERVED_MEMORY=256" >> /etc/ecs/ecs.config
+
+              cat /etc/ecs/ecs.config
+          - !Sub |
+              /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EcsAutoScalingGroup --region ${AWS::Region}
+
+  Ec2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+      - PolicyName: ecs-service
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['ecs:CreateCluster', 'ecs:DeregisterContainerInstance', 'ecs:DiscoverPollEndpoint',
+              'ecs:Poll', 'ecs:RegisterContainerInstance', 'ecs:StartTelemetrySession',
+              'ecs:Submit*', 'logs:CreateLogStream', 'logs:PutLogEvents']
+            Resource: ['*']
+      - PolicyName: S3OpsReadOnly
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['s3:GetObject', 's3:GetObjectVersion', 's3:ListBucket', 's3:ListBucketVersions']
+            Resource: ["arn:aws:s3:::highly-ops", "arn:aws:s3:::highly-ops/*", 
+              "arn:aws:s3:::highly-ops-mongodb", "arn:aws:s3:::highly-ops-mongodb/*"]
+  Ec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles: [!Ref 'Ec2Role']
+
+  Alb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Join [ "-", [ !Sub "${AWS::StackName}", "ALB" ] ]
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+      - Key: idle_timeout.timeout_seconds
+        Value: '30'
+      Subnets: !Ref 'PublicSubnetIds'
+  ECSServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+      - PolicyName: ecs-service
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['elasticloadbalancing:DeregisterInstancesFromLoadBalancer', 'elasticloadbalancing:DeregisterTargets',
+              'elasticloadbalancing:Describe*', 'elasticloadbalancing:RegisterInstancesWithLoadBalancer',
+              'elasticloadbalancing:RegisterTargets', 'ec2:Describe*', 'ec2:AuthorizeSecurityGroupIngress']
+            Resource: '*'
+
+Outputs:
+  DefaultCluster:
+    Description: The ID of the ECS Cluster
+    Value: !Ref DefaultCluster
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "EcsDefaultCluster" ] ]
+  ECSServiceRole:
+    Description: The service role to use when deploying services to the ECS Cluster
+    Value: !Ref ECSServiceRole
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "EcsRole" ] ]
+  Alb:
+    Description: The ID of the Application Load Balancer
+    Value: !Ref Alb
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "ALB" ] ]

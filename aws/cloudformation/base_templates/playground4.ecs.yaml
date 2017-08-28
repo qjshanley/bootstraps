@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: ECS Cluster
+
+Parameters:
+  EcsClusterName:
+    Type: String
+    Description: Name the ECS Cluster
+
+Resources:
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${EcsClusterName}"

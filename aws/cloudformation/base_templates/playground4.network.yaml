@@ -1,0 +1,303 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: VPC, Subnets, Gateways, Routing, and Security
+Parameters:
+  VpcCidrBlock:
+    Type: String 
+    Description: The IP address range for the VPC
+    MinLength: 9
+    MaxLength: 18
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
+Mappings:
+  SubnetConfig:
+    PublicSubnet01: { Az: us-west-2a, Cidr: x.x.0.0/25 }
+    PublicSubnet02: { Az: us-west-2b, Cidr: x.x.1.0/25 }
+    PublicSubnet03: { Az: us-west-2c, Cidr: x.x.2.0/25 }
+    PrivateSubnet01: { Az: us-west-2a, Cidr: x.x.0.128/25 }
+    PrivateSubnet02: { Az: us-west-2b, Cidr: x.x.1.128/25 }
+    PrivateSubnet03: { Az: us-west-2c, Cidr: x.x.2.128/25 }
+Resources:
+
+  #
+  # Configure network resources
+  #
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidrBlock
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "VPC" ] ] } ]
+
+  PublicSubnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, PublicSubnet01, Az ]
+      CidrBlock: !Join
+        - "."
+        - - !Select [ 0, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 1, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, PublicSubnet01, Cidr ] ] ]
+          - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, PublicSubnet01, Cidr ] ] ]
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: true
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, PublicSubnet01, Az ] ] ] } ]
+  PublicSubnet02:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, PublicSubnet02, Az ]
+      CidrBlock: !Join
+        - "."
+        - - !Select [ 0, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 1, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, PublicSubnet02, Cidr ] ] ]
+          - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, PublicSubnet02, Cidr ] ] ]
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: true
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, PublicSubnet02, Az ] ] ] } ]
+  PublicSubnet03:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, PublicSubnet03, Az ]
+      CidrBlock: !Join
+        - "."
+        - - !Select [ 0, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 1, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, PublicSubnet03, Cidr ] ] ]
+          - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, PublicSubnet03, Cidr ] ] ]
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: true
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PublicSubnet", !FindInMap [ SubnetConfig, PublicSubnet03, Az ] ] ] } ]
+  
+  PrivateSubnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, PrivateSubnet01, Az ]
+      CidrBlock: !Join
+        - "."
+        - - !Select [ 0, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 1, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, PrivateSubnet01, Cidr ] ] ]
+          - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, PrivateSubnet01, Cidr ] ] ]
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: false
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PrivateSubnet", !FindInMap [ SubnetConfig, PrivateSubnet01, Az ] ] ] } ]
+  PrivateSubnet02:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, PrivateSubnet02, Az ]
+      CidrBlock: !Join
+        - "."
+        - - !Select [ 0, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 1, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, PrivateSubnet02, Cidr ] ] ]
+          - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, PrivateSubnet02, Cidr ] ] ]
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: false
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PrivateSubnet", !FindInMap [ SubnetConfig, PrivateSubnet02, Az ] ] ] } ]
+  PrivateSubnet03:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !FindInMap [ SubnetConfig, PrivateSubnet03, Az ]
+      CidrBlock: !Join
+        - "."
+        - - !Select [ 0, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 1, !Split [ ".", !Ref VpcCidrBlock ] ]
+          - !Select [ 2, !Split [ ".", !FindInMap [ SubnetConfig, PrivateSubnet03, Cidr ] ] ]
+          - !Select [ 3, !Split [ ".", !FindInMap [ SubnetConfig, PrivateSubnet03, Cidr ] ] ]
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: false
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "PrivateSubnet", !FindInMap [ SubnetConfig, PrivateSubnet03, Az ] ] ] } ]
+
+  #
+  # Add ingress rules to the VPC's default security group
+  #
+  SecurityGroupHttpInbound:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt ["Vpc", "DefaultSecurityGroup"]
+      IpProtocol: tcp
+      FromPort: '80'
+      ToPort: '80'
+      CidrIp: 0.0.0.0/0
+  SecurityGroupHttpsInbound:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt ["Vpc", "DefaultSecurityGroup"]
+      IpProtocol: tcp
+      FromPort: '443'
+      ToPort: '443'
+      CidrIp: 0.0.0.0/0
+
+  #
+  # Configure IGW
+  #
+  Igw:
+    Type: AWS::EC2::InternetGateway
+    Properties: 
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "Igw" ] ] } ]
+  IgwToVpcAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref Igw
+      VpcId: !Ref Vpc
+  IgwRouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: IgwToVpcAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "ToIGW" ] ] } ]
+  RouteToIgw:
+    Type: AWS::EC2::Route
+    Properties:
+      GatewayId: !Ref Igw
+      RouteTableId: !Ref IgwRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+
+  #
+  # IGW Route Table Associations
+  #
+  PublicSubnet01ToIgw:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet01
+      RouteTableId: !Ref IgwRouteTable
+  PublicSubnet02ToIgw:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet02
+      RouteTableId: !Ref IgwRouteTable
+  PublicSubnet03ToIgw:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet03
+      RouteTableId: !Ref IgwRouteTable
+
+  #
+  # Configure Nat01
+  #
+  # Nat01ElasticIp:
+  #   Type: AWS::EC2::EIP
+  #   Properties:
+  #     Domain: vpc
+  Nat01:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      # AllocationId: !GetAtt ["Nat01ElasticIp", "AllocationId"]
+      AllocationId: eipalloc-c65c25a1
+      SubnetId: !Ref PublicSubnet01
+  Nat01ToVpcAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn: IgwToVpcAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref Igw
+  Nat01RouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: IgwToVpcAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "Nat01ToIgw" ] ] } ]
+  RouteToNat01:
+    Type: AWS::EC2::Route
+    Properties:
+      NatGatewayId: !Ref Nat01
+      RouteTableId: !Ref Nat01RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+  PrivateSubnet01ToNat01:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet01
+      RouteTableId: !Ref Nat01RouteTable
+  #
+  # Temporary route to use until we get our EIPs under the limit.
+  #
+  PrivateSubnet03ToNat01:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet03
+      RouteTableId: !Ref Nat01RouteTable
+
+  #
+  # Configure Nat02
+  #
+  Nat02ElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  Nat02:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt ["Nat02ElasticIp", "AllocationId"]
+      SubnetId: !Ref PublicSubnet02
+  Nat02ToVpcAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn: IgwToVpcAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref Igw
+  Nat02RouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: IgwToVpcAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "Nat02ToIgw" ] ] } ]
+  RouteToNat02:
+    Type: AWS::EC2::Route
+    Properties:
+      NatGatewayId: !Ref Nat02
+      RouteTableId: !Ref Nat02RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+  PrivateSubnet02ToNat02:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet02
+      RouteTableId: !Ref Nat02RouteTable
+
+
+  ###
+  ### Uncomment when elastic IPs issue is fixed.
+  ###
+
+  #
+  # Configure Nat03
+  #
+  # Nat03ElasticIp:
+  #   Type: AWS::EC2::EIP
+  #   Properties:
+  #     Domain: vpc
+  # Nat03:
+  #   Type: AWS::EC2::NatGateway
+  #   Properties:
+  #     AllocationId: !GetAtt ["Nat03ElasticIp", "AllocationId"]
+  #     SubnetId: !Ref PublicSubnet03
+  # Nat03ToVpcAttachment:
+  #   Type: AWS::EC2::VPCGatewayAttachment
+  #   DependsOn: IgwToVpcAttachment
+  #   Properties:
+  #     VpcId: !Ref Vpc
+  #     InternetGatewayId: !Ref Igw
+  # Nat03RouteTable:
+  #   Type: AWS::EC2::RouteTable
+  #   DependsOn: IgwToVpcAttachment
+  #   Properties:
+  #     VpcId: !Ref Vpc
+  #     Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "Nat03ToIgw" ] ] } ]
+  # RouteToNat03:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     NatGatewayId: !Ref Nat03
+  #     RouteTableId: !Ref Nat03RouteTable
+  #     DestinationCidrBlock: 0.0.0.0/0
+  # PrivateSubnet03ToNat03:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     SubnetId: !Ref PrivateSubnet03
+  #     RouteTableId: !Ref Nat03RouteTable
+
+Outputs:
+  VpcId:
+    Description: The ID of the VPC
+    Value: !Ref Vpc
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "VPC" ] ]

@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Application Load Balancer
+
+Parameters:
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Select at least two public subnets in your VPC for the application load balancer.
+
+Resources:
+  Alb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub "${AWS::StackName}"
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+      - Key: idle_timeout.timeout_seconds
+        Value: '30'
+      Subnets: !Ref 'PublicSubnetIds'
+
+Outputs:
+  Alb:
+    Description: The ID of the Application Load Balancer
+    Value: !Ref Alb
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "Id" ] ]
