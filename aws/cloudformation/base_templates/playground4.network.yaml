@@ -176,15 +176,14 @@ Resources:
   #
   # Configure Nat01
   #
-  # Nat01ElasticIp:
-  #   Type: AWS::EC2::EIP
-  #   Properties:
-  #     Domain: vpc
+  Nat01ElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
   Nat01:
     Type: AWS::EC2::NatGateway
     Properties:
-      # AllocationId: !GetAtt ["Nat01ElasticIp", "AllocationId"]
-      AllocationId: eipalloc-c65c25a1
+      AllocationId: !GetAtt ["Nat01ElasticIp", "AllocationId"]
       SubnetId: !Ref PublicSubnet01
   Nat01ToVpcAttachment:
     Type: AWS::EC2::VPCGatewayAttachment

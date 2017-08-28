@@ -1,5 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: ASG, Launch Configuration, and IAM Roles
+
 Parameters:
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
@@ -32,6 +33,7 @@ Parameters:
   EcsClusterName:
     Description: The name of the ECS cluster you want these instances added to.
     Type: String
+
 Mappings:
   AWSRegionToAMI:
     us-east-1:
@@ -52,6 +54,7 @@ Mappings:
       AMIID: ami-a900a3ca
     ap-southeast-2:
       AMIID: ami-5781be34
+
 Resources:
   AutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -61,13 +64,14 @@ Resources:
       MinSize: !Ref 'MinSize'
       MaxSize: !Ref 'MaxSize'
       DesiredCapacity: !Ref 'DesiredCapacity'
-      Tags: [ { Key: Name, Value: !Sub "Highly-${AWS::StackName}", PropagateAtLaunch: true } ]
+      Tags: [ { Key: Name, Value: !Sub "Highly-ASG-${AWS::StackName}", PropagateAtLaunch: true } ]
     CreationPolicy:
       ResourceSignal:
         Timeout: PT15M
     UpdatePolicy:
       AutoScalingReplacingUpdate:
         WillReplace: true
+  
   ContainerInstances:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
@@ -135,6 +139,7 @@ Resources:
             Action: ['s3:GetObject', 's3:GetObjectVersion', 's3:ListBucket', 's3:ListBucketVersions']
             Resource: ["arn:aws:s3:::highly-ops", "arn:aws:s3:::highly-ops/*", 
               "arn:aws:s3:::highly-ops-mongodb", "arn:aws:s3:::highly-ops-mongodb/*"]
+  
   Ec2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -161,10 +166,3 @@ Resources:
               'elasticloadbalancing:Describe*', 'elasticloadbalancing:RegisterInstancesWithLoadBalancer',
               'elasticloadbalancing:RegisterTargets', 'ec2:Describe*', 'ec2:AuthorizeSecurityGroupIngress']
             Resource: '*'
-
-Outputs:
-  ECSServiceRole:
-    Description: The service role to use when deploying services to the ECS Cluster
-    Value: !Ref ECSServiceRole
-    Export:
-      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "EcsRole" ] ]

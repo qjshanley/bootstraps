@@ -99,13 +99,19 @@ Resources:
     Properties:
       Cluster:
         Fn::ImportValue:
-          !Join [ ":", [ !Sub "${Environment}", "ECS-Cluster" ] ]
+          !Join [ ":", [ !Sub "${Environment}", "EcsDefaultCluster" ] ]
       DesiredCount: !Ref DesiredCount
+      PlacementConstraints:
+      - Type: memberOf
+        Expression: "attribute:environment == development"
+      PlacementStrategies:
+      - Type: spread
+        Field: "attribute:ecs.availability-zone"
       LoadBalancers:
       - ContainerName: simple-app
         ContainerPort: '80'
         TargetGroupArn: !Ref 'TargetGroup'
       Role:
         Fn::ImportValue:
-          !Join [ ":", [ !Sub "${Environment}", "ECS-Role" ] ]
+          !Join [ ":", [ !Sub "${Environment}", "EcsRole" ] ]
       TaskDefinition: !Ref 'taskdefinition'
