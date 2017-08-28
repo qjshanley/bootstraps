@@ -18,8 +18,13 @@ Resources:
       Subnets: !Ref 'PublicSubnetIds'
 
 Outputs:
-  Alb:
-    Description: The ID of the Application Load Balancer
+  AlbArn:
+    Description: The ARN of the Application Load Balancer
     Value: !Ref Alb
     Export:
-      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "Id" ] ]
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "Arn" ] ]
+  AlbDnsName:
+    Description: The DNS Name of the Application Load Balancer
+    Value: !GetAtt Alb.DNSName
+    Export:
+      Name: !Join [ ":", [ !Sub "${AWS::StackName}", "DnsName" ] ]
