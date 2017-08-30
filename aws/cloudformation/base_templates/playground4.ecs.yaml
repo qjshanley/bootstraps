@@ -1,13 +1,28 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: ECS Cluster
 
-Parameters:
-  EcsClusterName:
-    Type: String
-    Description: Name the ECS Cluster
-
 Resources:
   EcsCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: !Sub "${EcsClusterName}"
+      ClusterName: !Sub "${AWS::StackName}"
+  EcsServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ "-", [ !Sub "${AWS::StackName}", "Role" ] ]
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+      - PolicyName: ecs-service
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['elasticloadbalancing:DeregisterInstancesFromLoadBalancer', 'elasticloadbalancing:DeregisterTargets',
+              'elasticloadbalancing:Describe*', 'elasticloadbalancing:RegisterInstancesWithLoadBalancer',
+              'elasticloadbalancing:RegisterTargets', 'ec2:Describe*', 'ec2:AuthorizeSecurityGroupIngress']
+            Resource: '*'

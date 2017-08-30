@@ -33,6 +33,14 @@ Parameters:
   EcsClusterName:
     Description: The name of the ECS cluster you want these instances added to.
     Type: String
+  StackLabels:
+    Description: |
+      These are labels you want to be applied to the instances in the ASG. This can 
+      be used during container placement to ensure containers land in this ASG; useful 
+      when you have multiple ASGs within a single ECS Cluster. Note, the string provided 
+      is made lowercase and use double quotes. See ECS_INSTANCE_ATTRIBUTES for more details.
+      EXAMPLE {"stack": "development"}
+    Type: String
 
 Mappings:
   AWSRegionToAMI:
@@ -64,7 +72,7 @@ Resources:
       MinSize: !Ref 'MinSize'
       MaxSize: !Ref 'MaxSize'
       DesiredCapacity: !Ref 'DesiredCapacity'
-      Tags: [ { Key: Name, Value: !Sub "Highly-ASG-${AWS::StackName}", PropagateAtLaunch: true } ]
+      Tags: [ { Key: Name, Value: !Sub "${AWS::StackName}", PropagateAtLaunch: true } ]
     CreationPolicy:
       ResourceSignal:
         Timeout: PT15M
@@ -84,29 +92,24 @@ Resources:
         - ""
         - - |
               #!/bin/bash -xe
-              yum -y update --exclude=docker
+              yum update -y
               yum install -y aws-cli aws-cfn-bootstrap
 
-              aws s3 cp --recursive s3://highly-ops/scripts/logging/ ./scripts/logging/
-              chmod 755 ./scripts/logging/le_agent_install.sh  &&  ./scripts/logging/le_agent_install.sh
-              chmod 755 ./scripts/logging/le_conf_webapp.sh  &&  ./scripts/logging/le_conf_webapp.sh
-              rm -rf ./scripts
-
-              aws s3 cp s3://highly-ops/dockercfg ~/.dockercfg
-              DOCKER_AUTH=$(cat ~/.dockercfg | tr '\n' ' ')
-
-              aws s3 cp s3://highly-ops/scripts/docker_cleanup.sh /root/docker_cleanup.sh
-              chmod 755 /root/docker_cleanup.sh
-
-              echo "ECS_ENGINE_AUTH_TYPE=dockercfg" >> /etc/ecs/ecs.config
-              echo "ECS_ENGINE_AUTH_DATA=${DOCKER_AUTH}" >> /etc/ecs/ecs.config
+              #mkdir -p /tmp/scripts
+              #aws s3 cp --recursive s3://some_bucket/scripts/ /tmp/scripts/
+              #chmod 755 /tmp/scripts/some_script.sh  &&  /tmp/scripts/some_script.sh
+              #DOCKER_AUTH=$(cat /tmp/scripts/.dockercfg | tr '\n' ' ')
+              #rm -rf /tmp/scripts
+              
+              #echo "ECS_ENGINE_AUTH_TYPE=dockercfg" >> /etc/ecs/ecs.config              
+              #echo "ECS_ENGINE_AUTH_DATA=${DOCKER_AUTH}" >> /etc/ecs/ecs.config
           - !Sub |
               echo "ECS_CLUSTER=${EcsClusterName}" >> /etc/ecs/ecs.config
-              echo "ECS_INSTANCE_ATTRIBUTES={\"stack\": \"$(echo ${AWS::StackName} | tr '[:upper:]' '[:lower:]')\"}" >> /etc/ecs/ecs.config
+              echo 'ECS_INSTANCE_ATTRIBUTES=$(echo ${StackLabels} | tr [:upper:] [:lower:])' >> /etc/ecs/ecs.config
           - |
               echo "ECS_LOGLEVEL=warn" >> /etc/ecs/ecs.config
               echo "ECS_RESERVED_MEMORY=256" >> /etc/ecs/ecs.config
-
+              echo "ECS_CONTAINER_STOP_TIMEOUT=5m" >> /etc/ecs/ecs.config
               cat /etc/ecs/ecs.config
           - !Sub |
               /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
@@ -115,7 +118,7 @@ Resources:
   Ec2Role:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Join [ "-", [ !Sub "${AWS::StackName}", "Ec2Role" ] ]
+      RoleName: !Join [ "-", [ !Sub "${AWS::StackName}", "Role" ] ]
       AssumeRolePolicyDocument:
         Statement:
         - Effect: Allow
@@ -137,32 +140,10 @@ Resources:
           Statement:
           - Effect: Allow
             Action: ['s3:GetObject', 's3:GetObjectVersion', 's3:ListBucket', 's3:ListBucketVersions']
-            Resource: ["arn:aws:s3:::highly-ops", "arn:aws:s3:::highly-ops/*", 
-              "arn:aws:s3:::highly-ops-mongodb", "arn:aws:s3:::highly-ops-mongodb/*"]
+            Resource: ["arn:aws:s3:::some_bucket", "arn:aws:s3:::some_bucket/*"]
   
   Ec2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: /
       Roles: [!Ref 'Ec2Role']
-
-  ECSServiceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Join [ "-", [ !Sub "${AWS::StackName}", "EcsRole" ] ]
-      AssumeRolePolicyDocument:
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service: [ecs.amazonaws.com]
-          Action: ['sts:AssumeRole']
-      Path: /
-      Policies:
-      - PolicyName: ecs-service
-        PolicyDocument:
-          Statement:
-          - Effect: Allow
-            Action: ['elasticloadbalancing:DeregisterInstancesFromLoadBalancer', 'elasticloadbalancing:DeregisterTargets',
-              'elasticloadbalancing:Describe*', 'elasticloadbalancing:RegisterInstancesWithLoadBalancer',
-              'elasticloadbalancing:RegisterTargets', 'ec2:Describe*', 'ec2:AuthorizeSecurityGroupIngress']
-            Resource: '*'

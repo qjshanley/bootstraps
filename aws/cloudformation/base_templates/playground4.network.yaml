@@ -208,14 +208,6 @@ Resources:
     Properties:
       SubnetId: !Ref PrivateSubnet01
       RouteTableId: !Ref Nat01RouteTable
-  #
-  # Temporary route to use until we get our EIPs under the limit.
-  #
-  PrivateSubnet03ToNat01:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PrivateSubnet03
-      RouteTableId: !Ref Nat01RouteTable
 
   #
   # Configure Nat02
@@ -253,46 +245,41 @@ Resources:
       SubnetId: !Ref PrivateSubnet02
       RouteTableId: !Ref Nat02RouteTable
 
-
-  ###
-  ### Uncomment when elastic IPs issue is fixed.
-  ###
-
   #
   # Configure Nat03
   #
-  # Nat03ElasticIp:
-  #   Type: AWS::EC2::EIP
-  #   Properties:
-  #     Domain: vpc
-  # Nat03:
-  #   Type: AWS::EC2::NatGateway
-  #   Properties:
-  #     AllocationId: !GetAtt ["Nat03ElasticIp", "AllocationId"]
-  #     SubnetId: !Ref PublicSubnet03
-  # Nat03ToVpcAttachment:
-  #   Type: AWS::EC2::VPCGatewayAttachment
-  #   DependsOn: IgwToVpcAttachment
-  #   Properties:
-  #     VpcId: !Ref Vpc
-  #     InternetGatewayId: !Ref Igw
-  # Nat03RouteTable:
-  #   Type: AWS::EC2::RouteTable
-  #   DependsOn: IgwToVpcAttachment
-  #   Properties:
-  #     VpcId: !Ref Vpc
-  #     Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "Nat03ToIgw" ] ] } ]
-  # RouteToNat03:
-  #   Type: AWS::EC2::Route
-  #   Properties:
-  #     NatGatewayId: !Ref Nat03
-  #     RouteTableId: !Ref Nat03RouteTable
-  #     DestinationCidrBlock: 0.0.0.0/0
-  # PrivateSubnet03ToNat03:
-  #   Type: AWS::EC2::SubnetRouteTableAssociation
-  #   Properties:
-  #     SubnetId: !Ref PrivateSubnet03
-  #     RouteTableId: !Ref Nat03RouteTable
+  Nat03ElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  Nat03:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt ["Nat03ElasticIp", "AllocationId"]
+      SubnetId: !Ref PublicSubnet03
+  Nat03ToVpcAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn: IgwToVpcAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref Igw
+  Nat03RouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: IgwToVpcAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      Tags: [ { Key: Name, Value: !Join [ ":", [ !Sub "${AWS::StackName}", "Nat03ToIgw" ] ] } ]
+  RouteToNat03:
+    Type: AWS::EC2::Route
+    Properties:
+      NatGatewayId: !Ref Nat03
+      RouteTableId: !Ref Nat03RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+  PrivateSubnet03ToNat03:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet03
+      RouteTableId: !Ref Nat03RouteTable
 
 Outputs:
   VpcId:

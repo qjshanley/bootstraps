@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Some service
+Parameters:
+  Environment:
+    Type: String
+    Description: Name of the environment you want to deploy your service to.
+  DesiredCount:
+    Type: Number
+    Description: The number of tasks (copies) you want running for this service.
+Resources:
+  CloudwatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join ['-', [ECSLogGroup, !Ref 'AWS::StackName']]
+      RetentionInDays: 14
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: postgres
+      ContainerDefinitions:
+        - 
+          Name: postgres
+          Image: "highly/postgres:9.5.x"
+          Essential: true
+          Cpu: 10
+          Memory: 100
+          EntryPoint: ["bash"]
+          Command: ["-c", "pg_ctlcluster 9.5 main start && tail -f /dev/null"]
+          PortMappings:
+            - 
+              ContainerPort: 5432
+              HostPort: 5432
+          MountPoints:
+            -
+              SourceVolume: "postgres-95x-data"
+              ContainerPath: "/var/lib/postgresql/9.5/main"
+              ReadOnly: false
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref 'CloudwatchLogsGroup'
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: postgres
+      Volumes:
+        - Name: "postgres-95x-data"
+
+  Service:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: "Highly-ECS-Default"
+      DesiredCount: !Ref DesiredCount
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 50
+        MaximumPercent: 200
+      PlacementConstraints:
+        - 
+          Type: memberOf
+          Expression: !Sub "attribute:stack == ${Environment}" 
+      PlacementStrategies:
+        - 
+          Type: spread
+          Field: "attribute:ecs.availability-zone"
+      TaskDefinition: !Ref 'TaskDefinition'
