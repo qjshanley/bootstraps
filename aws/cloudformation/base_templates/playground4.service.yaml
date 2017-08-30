@@ -1,9 +1,9 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Some service
 Parameters:
-  Environment:
+  PlacementConstraints:
     Type: String
-    Description: Name of the environment you want to deploy your service to.
+    Description: Name of the environment you want to deploy your service to. EXAMPLE attribute:stack == development
   DesiredCount:
     Type: Number
     Description: The number of tasks (copies) you want running for this service.
@@ -20,7 +20,7 @@ Resources:
       Port: 80
       Protocol: HTTP
       UnhealthyThresholdCount: 2
-      VpcId: !ImportValue "Highly-Network:VPC"
+      VpcId: !ImportValue "Playground-Network:VPC"
   AlbListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -28,7 +28,7 @@ Resources:
         - 
           Type: forward
           TargetGroupArn: !Ref 'TargetGroup'
-      LoadBalancerArn: !ImportValue "Highly-ALB-Default:Arn"
+      LoadBalancerArn: !ImportValue "Playground-ALB-Development:Arn"
       Port: 80
       Protocol: HTTP
   ECSAlbListenerRule:
@@ -41,7 +41,7 @@ Resources:
       Conditions:
         - 
           Field: host-header
-          Values: ["cadvisor.tester.highly.co"]
+          Values: ["latest.cadvisor.qub3r.com"]
       ListenerArn: !Ref 'AlbListener'
       Priority: 1
   CloudwatchLogsGroup:
@@ -55,8 +55,9 @@ Resources:
       Family: cadvisor
       ContainerDefinitions:
         - 
-          Name: cadvisor
-          Image: google/cadvisor
+          Name: "cadvisor"
+          Hostname: "cadvisor"
+          Image: "google/cadvisor"
           Essential: true
           Cpu: 10
           Memory: 300
@@ -64,6 +65,10 @@ Resources:
             - 
               ContainerPort: 8080
               HostPort: 0
+          Environment:
+            -
+              Name: "SERVICE_8080_NAME"
+              Value: "cadvisor"
           MountPoints:
             -
               SourceVolume: "root"
@@ -82,11 +87,11 @@ Resources:
               ContainerPath: "/var/lib/docker"
               ReadOnly: true
           LogConfiguration:
-            LogDriver: awslogs
+            LogDriver: "awslogs"
             Options:
-              awslogs-group: !Ref 'CloudwatchLogsGroup'
-              awslogs-region: !Ref 'AWS::Region'
-              awslogs-stream-prefix: cadvisor
+              awslogs-group: !Ref "CloudwatchLogsGroup"
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: "cadvisor"
       Volumes:
         -
           Name: "root"
@@ -108,7 +113,7 @@ Resources:
   Service:
     Type: AWS::ECS::Service
     Properties:
-      Cluster: "Highly-ECS-Default"
+      Cluster: "Playground-ECS-Development"
       DesiredCount: !Ref DesiredCount
       DeploymentConfiguration:
         MinimumHealthyPercent: 50
@@ -116,7 +121,7 @@ Resources:
       PlacementConstraints:
         - 
           Type: memberOf
-          Expression: !Sub "attribute:stack == ${Environment}" 
+          Expression: !Sub "${PlacementConstraints}" 
       PlacementStrategies:
         - 
           Type: spread
@@ -126,5 +131,5 @@ Resources:
           ContainerName: cadvisor
           ContainerPort: 8080
           TargetGroupArn: !Ref 'TargetGroup'
-      Role: "Development-EcsRole"
+      Role: "Playground-ECS-Development-Role"
       TaskDefinition: !Ref 'TaskDefinition'

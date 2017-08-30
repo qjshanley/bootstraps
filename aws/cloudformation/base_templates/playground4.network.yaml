@@ -281,6 +281,17 @@ Resources:
       SubnetId: !Ref PrivateSubnet03
       RouteTableId: !Ref Nat03RouteTable
 
+  InternalHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      HostedZoneConfig:
+        Comment: !Sub "Hosted Zone for ECS Service Discovery in ${AWS::StackName}"
+      Name: "servicediscovery.internal"
+      VPCs:
+        -
+          VPCId: !Ref Vpc
+          VPCRegion: !Sub "${AWS::Region}"
+
 Outputs:
   VpcId:
     Description: The ID of the VPC

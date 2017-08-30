@@ -13,8 +13,8 @@ Resources:
       Name: !Sub "${AWS::StackName}"
       Scheme: internet-facing
       LoadBalancerAttributes:
-      - Key: idle_timeout.timeout_seconds
-        Value: '30'
+        - Key: idle_timeout.timeout_seconds
+          Value: '30'
       Subnets: !Ref 'PublicSubnetIds'
 
 Outputs:
